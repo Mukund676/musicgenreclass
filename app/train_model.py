@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv1D, MaxPooling1D, Flatten, Dropout
-from tensorflow.keras.utils import to_categorical
+from keras.utils import to_categorical
+from keras.models import Sequential
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout
 
 # Load data
 data = pd.read_csv(r"data\Data\features_3_sec.csv")
