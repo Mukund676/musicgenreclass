@@ -61,3 +61,9 @@ history = model.fit(X_train_scaled, y_train, epochs=30, batch_size=32, validatio
 
 #save the trained model
 model.save(r'models\music_genre_cnn.h5')
+
+#print accuracy
+test_loss, test_accuracy = model.evaluate(X_test_scaled, y_test)
+
+# Print the accuracy
+print(f"Test Accuracy: {test_accuracy:.2f}")
