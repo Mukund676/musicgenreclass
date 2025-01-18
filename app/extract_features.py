@@ -76,7 +76,3 @@ def extract_features(file_path):
     ] + mfccs_mean + mfccs_var, dtype=np.float64).flatten()  # Ensure everything is flattened and casted to float
 
     return features
-
-# Test the function
-features = extract_features(r"..\data\Data\genres_original\blues\blues.00000.wav")
-print(features.shape)

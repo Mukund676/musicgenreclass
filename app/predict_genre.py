@@ -39,24 +39,26 @@ def predict_genre(file_path):
 #go through each file in data/Data/genres_original\[insert genre here] and run the predict_genre function on it
 import os
 
+
+#run the predict_genre function on all the files in the blues folder
 #path to the audio files
-path = r"..\data\Data\genres_original"
 
-#list of genres
+#extract the genre from the path
+genre = path.split("\\")[-1]
 genres = ['blues', 'classical', 'country', 'disco', 'hiphop', 'jazz', 'metal', 'pop', 'reggae', 'rock']
+#run the predict_genre function on all the files in the folder
 
-#dictionary to store the genre and the number of correct predictions
-
-correct_predictions = 0
-total_predictions = 0
+#take random 10 files from each genre
+import random
 
 for genre in genres:
-    genre_path = os.path.join(path, genre)
-    for file in os.listdir(genre_path):
-        file_path = os.path.join(genre_path, file)
-        prediction = predict_genre(file_path)
-        if genre in file:
-            correct_predictions += 1
-        total_predictions += 1
-
-print(f"Accuracy: {correct_predictions/total_predictions}")
+    path = f".\\data\\Data\\genres_original\\{genre}"
+    files = os.listdir(path)
+    random_files = random.sample(files, 10)
+    for file in random_files:
+        file_path = os.path.join(path, file)
+        predicted_genre = predict_genre(file_path)
+        if genre == genres[predicted_genre]:
+            print(f"Correct: {file_path}", genres[predicted_genre])
+        else:
+            print(f"Incorrect: {file_path}", genres[predicted_genre])
