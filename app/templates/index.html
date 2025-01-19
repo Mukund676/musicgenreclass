@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>My App</title>
+        <link rel="stylesheet" href="../static/style.css">
+
+    </head>
+    <body>
+        <div class="container">
+            <h1>Music Genre Classification App</h1>
+
+            <div class="upload-form">
+                <form id="uploadForm">
+                    <input type="file" id="audioFile" accept=".wav, .mp3" placeholder="Upload an audio file" required>
+                    <button type="submit">Upload</button>
+                </form>
+            </div>
+            <div id="error" class="error"></div>
+            <div id="result" class="result">
+                <h2>Result: </h2>
+                <div class = "prediction">
+                    Predicted Genre: <strong id="predictedGenre"></strong>
+                    <br>
+                    Confidence: <strong id="confidence"></strong>%
+                </div>
+            </div>
+            <div class = 'top-predictions'>
+                <h3>Top 3 Predictions: </h3>
+                <ul id="top3List"></ul>
+            </div>
+        <script src="../static/script.js"></script>
+    </body>
+</html>
