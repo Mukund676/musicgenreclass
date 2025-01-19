@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout, GlobalMaxPooling1D, BatchNormalization
+from tensorflow.keras.layers import Conv1D, MaxPooling1D, Dense, Dropout, GlobalMaxPooling1D, BatchNormalization, SpatialDropout1D, Add, Input
 from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping, LearningRateScheduler
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.optimizers import Adam
@@ -26,45 +26,50 @@ labels = data['label']
 labels = pd.Categorical(labels).codes
 labels = to_categorical(labels)
 
-# Learning rate schedule for warm-up
 def lr_schedule(epoch):
-    initial_lr = 0.0001  # Lower initial learning rate
-    if epoch < 5:
-        return initial_lr
-    elif epoch < 10:
-        return initial_lr * 5  # Gradual increase
+    initial_lr = 0.00005  # Lower initial learning rate
+    if epoch < 8:
+        return initial_lr * (1.5 ** epoch)  # More gradual warm-up
+    elif epoch < 16:
+        return 0.0008  # Lower maximum learning rate
     else:
-        return 0.001  # Normal learning rate
+        # Add decay phase
+        return 0.0008 * (0.95 ** (epoch - 15))
 
 def create_enhanced_model(input_shape, num_classes):
     model = Sequential([
-        # Initial convolution with more filters
-        Conv1D(128, kernel_size=3, padding='same', activation='relu', input_shape=input_shape),
+        # Initial convolution with spatial dropout
+        Conv1D(128, kernel_size=3, padding='same', activation='relu', 
+               kernel_regularizer=l2(0.01), input_shape=input_shape),
         BatchNormalization(),
+        SpatialDropout1D(0.3),  # Increased dropout
         MaxPooling1D(pool_size=2),
-        Dropout(0.2),  # Reduced dropout
         
-        # Increased filters in middle layers
-        Conv1D(256, kernel_size=3, padding='same', activation='relu'),
+        # Middle layers with increased regularization
+        Conv1D(256, kernel_size=5, padding='same', activation='relu',
+               kernel_regularizer=l2(0.01)),
         BatchNormalization(),
+        SpatialDropout1D(0.3),
         MaxPooling1D(pool_size=2),
-        Dropout(0.2),
         
-        Conv1D(512, kernel_size=3, padding='same', activation='relu'),  # Doubled filters
+        Conv1D(512, kernel_size=5, padding='same', activation='relu',
+               kernel_regularizer=l2(0.015)),  # Increased regularization
         BatchNormalization(),
-        GlobalMaxPooling1D(),  # Changed to GlobalMaxPooling1D
-        Dropout(0.2),
+        SpatialDropout1D(0.4),
+        GlobalMaxPooling1D(),
         
-        Dense(256, activation='relu', kernel_regularizer=l2(0.01)),  # Increased units
+        # Dense layers with stronger regularization
+        Dense(512, activation='relu', kernel_regularizer=l2(0.02)),
         BatchNormalization(),
-        Dropout(0.3),
-        Dense(128, activation='relu', kernel_regularizer=l2(0.01)),
+        Dropout(0.5),  # Increased dropout
+        Dense(256, activation='relu', kernel_regularizer=l2(0.02)),
         BatchNormalization(),
+        Dropout(0.5),
         Dense(num_classes, activation='softmax')
     ])
     
     model.compile(
-        optimizer=Adam(learning_rate=0.0001),  # Lower initial learning rate
+        optimizer=Adam(learning_rate=0.00005),  # Lower initial learning rate
         loss='categorical_crossentropy',
         metrics=['accuracy']
     )
@@ -93,15 +98,15 @@ def cross_validate_model(X, y, n_splits=5):
         # Enhanced callbacks
         reduce_lr = ReduceLROnPlateau(
             monitor='val_loss',
-            factor=0.2,
-            patience=7,  # Increased patience
-            min_lr=0.00001,
+            factor=0.1,
+            patience=5,
+            min_lr=0.000001,
             verbose=1
         )
         
         early_stopping = EarlyStopping(
             monitor='val_loss',
-            patience=15,  # Increased patience
+            patience=20,
             restore_best_weights=True,
             verbose=1
         )
@@ -110,7 +115,7 @@ def cross_validate_model(X, y, n_splits=5):
         
         history = model.fit(
             X_train_scaled, y_train,
-            epochs=70,  # Increased epochs
+            epochs=70,
             batch_size=32,
             validation_data=(X_val_scaled, y_val),
             callbacks=[reduce_lr, early_stopping, lr_scheduler],
@@ -149,15 +154,15 @@ model.summary()
 # Define callbacks
 reduce_lr = ReduceLROnPlateau(
     monitor='val_loss',
-    factor=0.2,
-    patience=7,
-    min_lr=0.00001,
+    factor=0.1,
+    patience=5,
+    min_lr=0.000001,
     verbose=1
 )
 
 early_stopping = EarlyStopping(
     monitor='val_loss',
-    patience=15,
+    patience=20,
     restore_best_weights=True,
     verbose=1
 )

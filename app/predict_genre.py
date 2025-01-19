@@ -4,61 +4,48 @@ from sklearn.preprocessing import StandardScaler
 from extract_features import extract_features
 import librosa
 
-model = load_model(r".\models\music_genre_cnn.h5")
-
-def predict_genre(file_path):
-    """
-    This function predicts genre of audio file
+class GenrePredictor:
+    def __init__(self, model_path):
+        self.model = load_model(model_path)
+        self.scaler = StandardScaler()
+        self.genres = ['blues', 'classical', 'country', 'disco', 'hiphop', 
+                      'jazz', 'metal', 'pop', 'reggae', 'rock']
     
-    Parameters: 
-    - file_name (str): path to audio file
+    def predict(self, file_path):
+        """
+        This function predicts genre of audio file
+        
+        Parameters: 
+        - file_path (str): path to audio file
 
-    Returns:
-    - str: predicted genre
-    """
-    
-    #extract features
-    features = extract_features(file_path)
-    
-    #normalize features
-    scaler = StandardScaler()
-    features_scaled = scaler.fit_transform([features])
-    
-    #reshape data for CNN
-    features_scaled = np.expand_dims(features_scaled, axis=2)
-    
-    #predict genre
-    prediction = model.predict(features_scaled)
-    predicted_genre = np.argmax(prediction)
-    
-    return predicted_genre
-
-#run it on half the audio files
-#print whether it is correct based on if the predicted genre is in the filename
-
-#go through each file in data/Data/genres_original\[insert genre here] and run the predict_genre function on it
-import os
-
-
-#run the predict_genre function on all the files in the blues folder
-#path to the audio files
-
-#extract the genre from the path
-genre = path.split("\\")[-1]
-genres = ['blues', 'classical', 'country', 'disco', 'hiphop', 'jazz', 'metal', 'pop', 'reggae', 'rock']
-#run the predict_genre function on all the files in the folder
-
-#take random 10 files from each genre
-import random
-
-for genre in genres:
-    path = f".\\data\\Data\\genres_original\\{genre}"
-    files = os.listdir(path)
-    random_files = random.sample(files, 10)
-    for file in random_files:
-        file_path = os.path.join(path, file)
-        predicted_genre = predict_genre(file_path)
-        if genre == genres[predicted_genre]:
-            print(f"Correct: {file_path}", genres[predicted_genre])
-        else:
-            print(f"Incorrect: {file_path}", genres[predicted_genre])
+        Returns:
+        - dict: prediction results including genre and confidence
+        """
+        # Extract features
+        features = extract_features(file_path)
+        
+        # Normalize features
+        features_scaled = self.scaler.fit_transform([features])
+        
+        # Reshape data for CNN
+        features_scaled = np.expand_dims(features_scaled, axis=2)
+        
+        # Predict genre
+        predictions = self.model.predict(features_scaled)
+        predicted_idx = np.argmax(predictions)
+        
+        # Get top 3 predictions
+        top_3_idx = np.argsort(predictions[0])[-3:][::-1]
+        top_3_predictions = [
+            {
+                'genre': self.genres[idx],
+                'confidence': float(predictions[0][idx] * 100)  # Convert to percentage
+            }
+            for idx in top_3_idx
+        ]
+        
+        return {
+            'predicted_genre': self.genres[predicted_idx],
+            'confidence': float(predictions[0][predicted_idx] * 100),  # Convert to percentage
+            'top_3_predictions': top_3_predictions
+        }
